@@ -20,8 +20,10 @@ module.exports = (robot) ->
   lastNotifiedTime = {}
 
   # Interval between mentioning that execution is rate limited
-  notifyPeriodMs = parseInt(process.env.HUBOT_RATE_LIMIT_NOTIFY_PERIOD)*1000 if not notifyPeriodMs? and process.env.HUBOT_RATE_LIMIT_NOTIFY_PERIOD?
-  notifyPeriodMs = 10*1000 if not notifyPeriodMs? # default: 10s
+  if process.env.HUBOT_RATE_LIMIT_NOTIFY_PERIOD?
+    notifyPeriodMs = parseInt(process.env.HUBOT_RATE_LIMIT_NOTIFY_PERIOD)*1000
+  else
+    notifyPeriodMs = 10*1000 # default: 10s
 
   robot.respond /debug rate limits/, {rateLimits:{minPeriodMs:0}}, (response) ->
     response.reply('lastExecutedTime: ' + JSON.stringify(lastExecutedTime))
@@ -34,16 +36,19 @@ module.exports = (robot) ->
     return unless listenerID?
     try
       # Default to 1s unless listener provides a different minimum period
-      minPeriodMs = listener.options.rateLimits.minPeriodMs if not minPeriodMs? and listener.options?.rateLimits?.minPeriodMs?
-      minPeriodMs = parseInt(process.env.HUBOT_RATE_LIMIT_CMD_PERIOD)*1000 if not minPeriodMs? and process.env.HUBOT_RATE_LIMIT_CMD_PERIOD?
-      minPeriodMs = 1*1000 if not minPeriodMs?
+      if listener.options?.rateLimits?.minPeriodMs?
+        minPeriodMs = listener.options.rateLimits.minPeriodMs
+      else if process.env.HUBOT_RATE_LIMIT_CMD_PERIOD?
+        minPeriodMs = parseInt(process.env.HUBOT_RATE_LIMIT_CMD_PERIOD)*1000
+      else
+        minPeriodMs = 1*1000
 
       # See if command has been executed recently
       if lastExecutedTime.hasOwnProperty(listenerID) and
          lastExecutedTime[listenerID] > Date.now() - minPeriodMs
         # Command is being executed too quickly!
         robot.logger.debug "Rate limiting " + listenerID + "; #{minPeriodMs} > #{Date.now() - lastExecutedTime[listenerID]}" 
-        # At least notify once per rate limiting event
+        # Notify at least once per rate limiting event
         myNotifyPeriodMs = minPeriodMs if notifyPeriodMs > minPeriodMs
         # If no notification sent recently
         if (lastNotifiedTime.hasOwnProperty(listenerID) and
