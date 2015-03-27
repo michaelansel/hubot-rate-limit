@@ -12,6 +12,7 @@
 #
 # Author:
 #   Michael Ansel <mansel@box.com>
+#   Geoffrey Anderson <geoff@geoffreyanderson.net>
 
 module.exports = (robot) ->
   # Map of listener ID to last time it was executed
@@ -29,15 +30,15 @@ module.exports = (robot) ->
     response.reply('lastExecutedTime: ' + JSON.stringify(lastExecutedTime))
     response.reply('lastNotifiedTime: ' + JSON.stringify(lastNotifiedTime))
 
-  robot.listenerMiddleware (robot, listener, response, next, done) ->
+  robot.listenerMiddleware (robot, context, next, done) ->
     # Fallback to regex even though it is dirty
-    listenerID = listener.options?.id or listener.regex
+    listenerID = context.listener.options?.id or context.listener.regex
     # Bail on unknown because we can't reliably track listeners
     return unless listenerID?
     try
       # Default to 1s unless listener provides a different minimum period
-      if listener.options?.rateLimits?.minPeriodMs?
-        minPeriodMs = listener.options.rateLimits.minPeriodMs
+      if context.listener.options?.rateLimits?.minPeriodMs?
+        minPeriodMs = context.listener.options.rateLimits.minPeriodMs
       else if process.env.HUBOT_RATE_LIMIT_CMD_PERIOD?
         minPeriodMs = parseInt(process.env.HUBOT_RATE_LIMIT_CMD_PERIOD)*1000
       else
@@ -54,7 +55,7 @@ module.exports = (robot) ->
         if (lastNotifiedTime.hasOwnProperty(listenerID) and
             lastNotifiedTime[listenerID] < Date.now() - myNotifyPeriodMs) or
            not lastNotifiedTime.hasOwnProperty(listenerID)
-          response.reply "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
+          context.response.reply "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
           lastNotifiedTime[listenerID] = Date.now()
         # Bypass executing the listener callback
         done()
@@ -63,4 +64,4 @@ module.exports = (robot) ->
           lastExecutedTime[listenerID] = Date.now()
           done()
     catch err
-      robot.emit('error', err, response)
+      robot.emit('error', err, context.response)
