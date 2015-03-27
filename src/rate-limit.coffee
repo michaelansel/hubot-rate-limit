@@ -31,12 +31,15 @@ module.exports = (robot) ->
     response.reply('lastNotifiedTime: ' + JSON.stringify(lastNotifiedTime))
 
   robot.listenerMiddleware (robot, context, next, done) ->
-    # Fallback to regex even though it is dirty
+    # Retrieve the listener id. If one hasn't been registered, fallback
+    # to using the regex to uniquely identify the listener (even though
+    # it is dirty).
     listenerID = context.listener.options?.id or context.listener.regex
     # Bail on unknown because we can't reliably track listeners
     return unless listenerID?
     try
-      # Default to 1s unless listener provides a different minimum period
+      # Default to 1s unless listener or environment variable provides a
+      # different minimum period (listener overrides win here).
       if context.listener.options?.rateLimits?.minPeriodMs?
         minPeriodMs = context.listener.options.rateLimits.minPeriodMs
       else if process.env.HUBOT_RATE_LIMIT_CMD_PERIOD?
@@ -44,24 +47,32 @@ module.exports = (robot) ->
       else
         minPeriodMs = 1*1000
 
-      # See if command has been executed recently
-      if lastExecutedTime.hasOwnProperty(listenerID) and
-         lastExecutedTime[listenerID] > Date.now() - minPeriodMs
+      # Grab the user name that fired this listener. If it's in a room, use that instead.
+      roomOrUser = context.response.message.user.name
+      if context.response.message.user.room?
+        roomOrUser = context.response.message.user.room
+
+      # Construct a key to rate limit on. If the response was from a room
+      # then append the room name to the key. Otherwise, append the user name.
+      listenerAndRoom = listenerID + "_" + roomOrUser
+      # See if command has been executed recently in the same room (or with the same user)
+      if lastExecutedTime.hasOwnProperty(listenerAndRoom) and
+         lastExecutedTime[listenerAndRoom] > Date.now() - minPeriodMs
         # Command is being executed too quickly!
-        robot.logger.debug "Rate limiting " + listenerID + "; #{minPeriodMs} > #{Date.now() - lastExecutedTime[listenerID]}" 
+        robot.logger.debug "Rate limiting " + listenerID + " in " + roomOrUser + "; #{minPeriodMs} > #{Date.now() - lastExecutedTime[listenerAndRoom]}"
         # Notify at least once per rate limiting event
         myNotifyPeriodMs = minPeriodMs if notifyPeriodMs > minPeriodMs
         # If no notification sent recently
-        if (lastNotifiedTime.hasOwnProperty(listenerID) and
-            lastNotifiedTime[listenerID] < Date.now() - myNotifyPeriodMs) or
-           not lastNotifiedTime.hasOwnProperty(listenerID)
+        if (lastNotifiedTime.hasOwnProperty(listenerAndRoom) and
+            lastNotifiedTime[listenerAndRoom] < Date.now() - myNotifyPeriodMs) or
+           not lastNotifiedTime.hasOwnProperty(listenerAndRoom)
           context.response.reply "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
-          lastNotifiedTime[listenerID] = Date.now()
+          lastNotifiedTime[listenerAndRoom] = Date.now()
         # Bypass executing the listener callback
         done()
       else
         next () ->
-          lastExecutedTime[listenerID] = Date.now()
+          lastExecutedTime[listenerAndRoom] = Date.now()
           done()
     catch err
       robot.emit('error', err, context.response)
