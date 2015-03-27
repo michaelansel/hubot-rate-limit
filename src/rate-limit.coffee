@@ -47,10 +47,11 @@ module.exports = (robot) ->
       else
         minPeriodMs = 1*1000
 
-      # Grab the user name that fired this listener. If it's in a room, use that instead.
-      roomOrUser = context.response.message.user.name
+      # Grab the room or user name that fired this listener.
       if context.response.message.user.room?
         roomOrUser = context.response.message.user.room
+      else
+        roomOrUser = context.response.message.user.name
 
       # Construct a key to rate limit on. If the response was from a room
       # then append the room name to the key. Otherwise, append the user name.
