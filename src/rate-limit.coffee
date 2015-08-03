@@ -30,7 +30,7 @@ module.exports = (robot) ->
     response.reply('lastExecutedTime: ' + JSON.stringify(lastExecutedTime))
     response.reply('lastNotifiedTime: ' + JSON.stringify(lastNotifiedTime))
 
-  robot.listenerMiddleware (robot, context, next, done) ->
+  robot.listenerMiddleware (context, next, done) ->
     # Retrieve the listener id. If one hasn't been registered, fallback
     # to using the regex to uniquely identify the listener (even though
     # it is dirty).
