@@ -1,7 +1,7 @@
 {
   "name": "hubot-rate-limit",
   "description": "Middleware for adding rate limits to commands",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "author": "Michael Ansel <mansel@box.com>",
   "license": "MIT",
 
@@ -20,11 +20,11 @@
   },
 
   "peerDependencies": {
-    "hubot": "2.x"
+    "hubot": "^2.14.0"
   },
 
   "devDependencies": {
-    "hubot": "2.x",
+    "hubot": "^2.14.0",
     "mocha": "*",
     "chai": "*",
     "sinon-chai": "*",
