@@ -9,11 +9,11 @@
 
   "repository": {
     "type": "git",
-    "url": "git://github.com/hubot-scripts/hubot-rate-limit.git"
+    "url": "git://github.com/michaelansel/hubot-rate-limit.git"
   },
 
   "bugs": {
-    "url": "https://github.com/hubot-scripts/hubot-rate-limit/issues"
+    "url": "https://github.com/michaelansel/hubot-rate-limit/issues"
   },
 
   "dependencies": {
