@@ -14,6 +14,8 @@
 #   Michael Ansel <mansel@box.com>
 #   Geoffrey Anderson <geoff@geoffreyanderson.net>
 
+util = require 'util'
+
 module.exports = (robot) ->
   # Map of listener ID to last time it was executed
   lastExecutedTime = {}
@@ -53,27 +55,39 @@ module.exports = (robot) ->
       else
         roomOrUser = context.response.message.user.name
 
-      # Construct a key to rate limit on. If the response was from a room
-      # then append the room name to the key. Otherwise, append the user name.
-      listenerAndRoom = listenerID + "_" + roomOrUser
+      # Get the key used for storing data in lastExecutedTime and
+      # lastNotifiedTime
+      if context.listener.options.rateLimits &&
+         context.listener.options.rateLimits.keyFunction
+        # Get key by calling a user-defined function
+        robot.logger.debug "Getting key from keyFunction"
+        key = context.listener.options.rateLimits.keyFunction(context)
+      else
+        # Construct a key to rate limit on. If the response was from a room
+        # then append the room name to the key. Otherwise, append the user name.
+        robot.logger.debug "Getting key from listenerID + _ + roomOrUser"
+        key = listenerID + "_" + roomOrUser
+
+      robot.logger.debug "key = \"#{key}\""
+
       # See if command has been executed recently in the same room (or with the same user)
-      if lastExecutedTime.hasOwnProperty(listenerAndRoom) and
-         lastExecutedTime[listenerAndRoom] > Date.now() - minPeriodMs
+      if lastExecutedTime.hasOwnProperty(key) and
+         lastExecutedTime[key] > Date.now() - minPeriodMs
         # Command is being executed too quickly!
-        robot.logger.debug "Rate limiting " + listenerID + " in " + roomOrUser + "; #{minPeriodMs} > #{Date.now() - lastExecutedTime[listenerAndRoom]}"
+        robot.logger.debug "Rate limiting " + listenerID + " in " + roomOrUser + "; #{minPeriodMs} > #{Date.now() - lastExecutedTime[key]}"
         # Notify at least once per rate limiting event
         myNotifyPeriodMs = minPeriodMs if notifyPeriodMs > minPeriodMs
         # If no notification sent recently
-        if (lastNotifiedTime.hasOwnProperty(listenerAndRoom) and
-            lastNotifiedTime[listenerAndRoom] < Date.now() - myNotifyPeriodMs) or
-           not lastNotifiedTime.hasOwnProperty(listenerAndRoom)
+        if (lastNotifiedTime.hasOwnProperty(key) and
+            lastNotifiedTime[key] < Date.now() - myNotifyPeriodMs) or
+           not lastNotifiedTime.hasOwnProperty(key)
           context.response.reply "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
-          lastNotifiedTime[listenerAndRoom] = Date.now()
+          lastNotifiedTime[key] = Date.now()
         # Bypass executing the listener callback
         done()
       else
         next () ->
-          lastExecutedTime[listenerAndRoom] = Date.now()
+          lastExecutedTime[key] = Date.now()
           done()
     catch err
       robot.emit('error', err, context.response)
