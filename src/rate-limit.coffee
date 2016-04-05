@@ -4,6 +4,8 @@
 # Configuration:
 #   HUBOT_RATE_LIMIT_NOTIFY_PERIOD - how frequently to put rate limiting messages into chat (accounting done by listener)
 #   HUBOT_RATE_LIMIT_CMD_PERIOD - how frequently to execute any single listener (can be overridden by the listener)
+#   HUBOT_RATE_LIMIT_NOTIFY_MSG - message to be sent when user has exceeded rate limit
+#   HUBOT_RATE_LIMIT_NOTIFY_DISABLE - truthy to not print message.
 #
 # Commands:
 #
@@ -13,6 +15,7 @@
 # Author:
 #   Michael Ansel <mansel@box.com>
 #   Geoffrey Anderson <geoff@geoffreyanderson.net>
+#   Matej Voboril <matej@voboril.org>
 
 module.exports = (robot) ->
   # Map of listener ID to last time it was executed
@@ -35,6 +38,9 @@ module.exports = (robot) ->
     # to using the regex to uniquely identify the listener (even though
     # it is dirty).
     listenerID = context.listener.options?.id or context.listener.regex
+    #message
+    rateLimitMsg = process.env.HUBOT_RATE_LIMIT_NOTIFY_MSG || "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
+    
     # Bail on unknown because we can't reliably track listeners
     return unless listenerID?
     try
@@ -67,7 +73,9 @@ module.exports = (robot) ->
         if (lastNotifiedTime.hasOwnProperty(listenerAndRoom) and
             lastNotifiedTime[listenerAndRoom] < Date.now() - myNotifyPeriodMs) or
            not lastNotifiedTime.hasOwnProperty(listenerAndRoom)
-          context.response.reply "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
+          #context.response.reply "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
+          if not process.env.HUBOT_RATE_LIMIT_NOTIFY_DISABLE
+            context.response.reply rateLimitMsg
           lastNotifiedTime[listenerAndRoom] = Date.now()
         # Bypass executing the listener callback
         done()
