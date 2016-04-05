@@ -73,6 +73,10 @@ module.exports = (robot) ->
         if (lastNotifiedTime.hasOwnProperty(listenerAndRoom) and
             lastNotifiedTime[listenerAndRoom] < Date.now() - myNotifyPeriodMs) or
            not lastNotifiedTime.hasOwnProperty(listenerAndRoom)
+<<<<<<< HEAD
+=======
+          #context.response.reply "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
+>>>>>>> ef776c36c23f2505e2a28e92c6744edc488f89b8
           if not process.env.HUBOT_RATE_LIMIT_NOTIFY_DISABLE
             context.response.reply rateLimitMsg
           lastNotifiedTime[listenerAndRoom] = Date.now()
