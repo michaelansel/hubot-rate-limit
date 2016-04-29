@@ -61,13 +61,15 @@ module.exports = (robot) ->
          lastExecutedTime[listenerAndRoom] > Date.now() - minPeriodMs
         # Command is being executed too quickly!
         robot.logger.debug "Rate limiting " + listenerID + " in " + roomOrUser + "; #{minPeriodMs} > #{Date.now() - lastExecutedTime[listenerAndRoom]}"
+
         # Notify at least once per rate limiting event
         myNotifyPeriodMs = minPeriodMs if notifyPeriodMs > minPeriodMs
         # If no notification sent recently
         if (lastNotifiedTime.hasOwnProperty(listenerAndRoom) and
             lastNotifiedTime[listenerAndRoom] < Date.now() - myNotifyPeriodMs) or
            not lastNotifiedTime.hasOwnProperty(listenerAndRoom)
-          context.response.reply "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
+          if not process.env.HUBOT_RATE_LIMIT_SILENT?
+            context.response.reply "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
           lastNotifiedTime[listenerAndRoom] = Date.now()
         # Bypass executing the listener callback
         done()
