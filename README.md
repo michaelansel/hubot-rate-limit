@@ -21,8 +21,12 @@ Then add **hubot-rate-limit** to your `external-scripts.json`:
 ## Configuration
 
 `HUBOT_RATE_LIMIT_NOTIFY_PERIOD` - default interval (seconds) between posting rate limiting messages in chat
+
 `HUBOT_RATE_LIMIT_CMD_PERIOD` - default interval (seconds) between each invocation of a specific listener
+
 `HUBOT_RATE_LIMIT_SILENT` - (Optional) Setting this environment variable to any truthy value will supress rate limit exceeded feedback messages in chat.
+
+`HUBOT_RATE_LIMIT_NOTIFY_MSG` - (Optional) message to be sent when user has exceeded rate limit
 
 `HUBOT_RATE_LIMIT_CMD_PERIOD` can be overridden using listener options:
 ```coffeescript

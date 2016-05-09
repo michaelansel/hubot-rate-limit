@@ -4,6 +4,8 @@
 # Configuration:
 #   HUBOT_RATE_LIMIT_NOTIFY_PERIOD - how frequently to put rate limiting messages into chat (accounting done by listener)
 #   HUBOT_RATE_LIMIT_CMD_PERIOD - how frequently to execute any single listener (can be overridden by the listener)
+#   HUBOT_RATE_LIMIT_SILENT - (Optional) Setting this environment variable to any truthy value will supress rate limit exceeded feedback messages in chat.
+#   HUBOT_RATE_LIMIT_NOTIFY_MSG - (Optional) message to be sent when user has exceeded rate limit
 #
 # Commands:
 #
@@ -46,7 +48,8 @@ module.exports = (robot) ->
         minPeriodMs = parseInt(process.env.HUBOT_RATE_LIMIT_CMD_PERIOD)*1000
       else
         minPeriodMs = 1*1000
-
+      #message
+      rateLimitMsg = process.env.HUBOT_RATE_LIMIT_NOTIFY_MSG || "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."   
       # Grab the room or user name that fired this listener.
       if context.response.message.user.room?
         roomOrUser = context.response.message.user.room
@@ -69,7 +72,7 @@ module.exports = (robot) ->
             lastNotifiedTime[listenerAndRoom] < Date.now() - myNotifyPeriodMs) or
            not lastNotifiedTime.hasOwnProperty(listenerAndRoom)
           if not process.env.HUBOT_RATE_LIMIT_SILENT?
-            context.response.reply "Rate limit hit! Please wait #{minPeriodMs/1000} seconds before trying again."
+            context.response.reply rateLimitMsg
           lastNotifiedTime[listenerAndRoom] = Date.now()
         # Bypass executing the listener callback
         done()
