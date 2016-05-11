@@ -29,8 +29,11 @@ module.exports = (robot) ->
     notifyPeriodMs = 10*1000 # default: 10s
 
   robot.respond /debug rate limits/, {rateLimits:{minPeriodMs:0}}, (response) ->
-    response.reply('lastExecutedTime: ' + JSON.stringify(lastExecutedTime))
-    response.reply('lastNotifiedTime: ' + JSON.stringify(lastNotifiedTime))
+    response.reply("""
+      ```
+      lastExecutedTime: #{JSON.stringify(lastExecutedTime, null, 4)}
+      lastNotifiedTime: #{JSON.stringify(lastNotifiedTime, null, 4)}
+      ```""")
 
   robot.listenerMiddleware (context, next, done) ->
     # Retrieve the listener id. If one hasn't been registered, fallback
